@@ -13,7 +13,7 @@ export type ProfileEntity = {
   userId: string;
 };
 export type CreateProfileDTO = Omit<ProfileEntity, 'id'>;
-type ChangeProfileDTO = Partial<Omit<ProfileEntity, 'id' | 'userId'>>;
+export type ChangeProfileDTO = Partial<Omit<ProfileEntity, 'id' | 'userId'>>;
 
 export default class DBProfiles extends DBEntity<
   ProfileEntity,

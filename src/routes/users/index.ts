@@ -96,7 +96,17 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<UserEntity> {}
+    async function (request, reply): Promise<UserEntity> {
+      try {
+        const { id } = request.params as GetId;
+        return this.db.users.delete(id);
+      } catch (error) {
+        if (error instanceof NoRequiredEntity) {
+          throw fastify.httpErrors.notFound();
+        }
+        throw fastify.httpErrors.badRequest();
+      }
+    }
   );
 
   fastify.post(

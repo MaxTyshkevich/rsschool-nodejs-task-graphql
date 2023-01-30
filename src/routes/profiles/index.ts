@@ -2,6 +2,7 @@ import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-sc
 import { idParamSchema } from '../../utils/reusedSchemas';
 import { createProfileBodySchema, changeProfileBodySchema } from './schema';
 import type {
+  ChangeProfileDTO,
   CreateProfileDTO,
   ProfileEntity,
 } from '../../utils/DB/entities/DBProfiles';
@@ -98,7 +99,22 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<ProfileEntity> {}
+    async function (request, reply): Promise<ProfileEntity> {
+      try {
+        const { id } = request.params as GetId;
+
+        const profile = await fastify.db.profiles.change(
+          id,
+          request.body as ChangeProfileDTO
+        );
+        return profile;
+      } catch (error) {
+        if (error instanceof NoRequiredEntity) {
+          throw fastify.httpErrors.notFound();
+        }
+        throw fastify.httpErrors.badRequest();
+      }
+    }
   );
 };
 
