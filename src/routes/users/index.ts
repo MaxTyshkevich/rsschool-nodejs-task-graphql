@@ -61,9 +61,9 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         return await fastify.db.users.create(user);
       } catch (error) {
         if (error instanceof NoRequiredEntity) {
-          throw fastify.httpErrors.notFound();
+          throw fastify.httpErrors.badRequest('404');
         }
-        throw fastify.httpErrors.badRequest();
+        throw fastify.httpErrors.notFound();
       }
     }
   );
@@ -99,7 +99,23 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     async function (request, reply): Promise<UserEntity> {
       try {
         const { id } = request.params as GetId;
-        return this.db.users.delete(id);
+
+        const yoursalf = await fastify.db.users.findOne({
+          key: 'id',
+          equals: id,
+        });
+        if (!yoursalf) throw fastify.httpErrors.notFound(`User not Found!`);
+
+        const updatesalf = { ...yoursalf } as UserEntity;
+
+        updatesalf.subscribedToUserIds?.push(JSON.stringify(request.body));
+
+        const changed = await this.db.users.change(
+          id,
+          updatesalf as ChangeUser
+        );
+
+        return changed;
       } catch (error) {
         if (error instanceof NoRequiredEntity) {
           throw fastify.httpErrors.notFound();
@@ -117,7 +133,34 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<UserEntity> {}
+    async function (request, reply): Promise<UserEntity> {
+      try {
+        const { id } = request.params as GetId;
+
+        const yoursalf = await fastify.db.users.findOne({
+          key: 'id',
+          equals: id,
+        });
+        if (!yoursalf) throw fastify.httpErrors.notFound(`User not Found!`);
+
+        const updatesalf = { ...yoursalf } as UserEntity;
+
+        const targetUser = JSON.stringify(request.body);
+        updatesalf.subscribedToUserIds.filter((user) => user !== targetUser);
+
+        const changed = await this.db.users.change(
+          id,
+          updatesalf as ChangeUser
+        );
+
+        return changed;
+      } catch (error) {
+        if (error instanceof NoRequiredEntity) {
+          throw fastify.httpErrors.notFound();
+        }
+        throw fastify.httpErrors.notFound();
+      }
+    }
   );
 
   fastify.patch(
@@ -137,7 +180,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         if (error instanceof NoRequiredEntity) {
           throw fastify.httpErrors.notFound();
         }
-        throw fastify.httpErrors.badRequest();
+        throw fastify.httpErrors.notFound();
       }
     }
   );
