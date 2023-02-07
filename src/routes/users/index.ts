@@ -7,21 +7,7 @@ import {
 } from './schemas';
 import type { UserEntity } from '../../utils/DB/entities/DBUsers';
 import { NoRequiredEntity } from '../../utils/DB/errors/NoRequireEntity.error';
-
-export type GetId = {
-  id: string;
-};
-type CreateUser = {
-  firstName: string;
-  lastName: string;
-  email: string;
-};
-type ChangeUser = {
-  firstName?: string | undefined;
-  lastName?: string | undefined;
-  email?: string | undefined;
-  subscribedToUserIds?: string[] | undefined;
-};
+import Fastify from 'fastify';
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
   fastify
@@ -38,9 +24,10 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<UserEntity> {
+      const { id } = request.params;
       const user = await fastify.db.users.findOne({
         key: 'id',
-        equals: (request.params as GetId).id,
+        equals: id,
       });
       if (!user) throw fastify.httpErrors.notFound(`User not Found!`);
       return user;
@@ -56,14 +43,17 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<UserEntity> {
       try {
-        const user = request.body as CreateUser;
+        const user = request.body;
 
         return await fastify.db.users.create(user);
       } catch (error) {
-        if (error instanceof NoRequiredEntity) {
-          throw fastify.httpErrors.badRequest('404');
+        if (
+          error instanceof NoRequiredEntity ||
+          error instanceof Fastify.errorCodes.FST_ERR_NOT_FOUND
+        ) {
+          throw fastify.httpErrors.notFound();
         }
-        throw fastify.httpErrors.notFound();
+        throw fastify.httpErrors.badRequest();
       }
     }
   );
@@ -77,10 +67,41 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<UserEntity> {
       try {
-        const { id } = request.params as GetId;
+        const { id } = request.params;
+
+        const yoursalf = await fastify.db.users.findOne({
+          key: 'id',
+          equals: id,
+        });
+
+        if (!yoursalf) throw new NoRequiredEntity('');
+
+        const userssubscribed = await this.db.users.findMany({
+          key: 'subscribedToUserIds',
+          inArray: id,
+        });
+
+        userssubscribed.forEach(async (user: UserEntity) => {
+          const indexID = user.subscribedToUserIds.findIndex(
+            (userID) => userID === id
+          );
+
+          const updateUserSubscribe = [...user.subscribedToUserIds].splice(
+            indexID,
+            1
+          );
+
+          await this.db.users.change(user.id, {
+            subscribedToUserIds: updateUserSubscribe,
+          });
+        });
+
         return this.db.users.delete(id);
       } catch (error) {
-        if (error instanceof NoRequiredEntity) {
+        if (
+          error instanceof NoRequiredEntity ||
+          error instanceof Fastify.errorCodes.FST_ERR_NOT_FOUND
+        ) {
           throw fastify.httpErrors.notFound();
         }
         throw fastify.httpErrors.badRequest();
@@ -98,26 +119,47 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<UserEntity> {
       try {
-        const { id } = request.params as GetId;
+        const { id } = request.params;
 
         const yoursalf = await fastify.db.users.findOne({
           key: 'id',
           equals: id,
         });
-        if (!yoursalf) throw fastify.httpErrors.notFound(`User not Found!`);
+        if (!yoursalf) throw fastify.httpErrors.notFound();
 
-        const updatesalf = { ...yoursalf } as UserEntity;
+        const userSubscribeTo = await fastify.db.users.findOne({
+          key: 'id',
+          equals: request.body.userId,
+        });
 
-        updatesalf.subscribedToUserIds?.push(JSON.stringify(request.body));
+        if (!userSubscribeTo) throw fastify.httpErrors.notFound();
+
+        const isSubscribed = userSubscribeTo.subscribedToUserIds.includes(
+          yoursalf.id
+        );
+        if (isSubscribed) {
+          return userSubscribeTo;
+        }
+
+        const updateUserSubscribeTo = {
+          ...userSubscribeTo,
+          subscribedToUserIds: [
+            ...userSubscribeTo.subscribedToUserIds,
+            yoursalf.id,
+          ],
+        };
 
         const changed = await this.db.users.change(
-          id,
-          updatesalf as ChangeUser
+          userSubscribeTo.id,
+          updateUserSubscribeTo
         );
 
         return changed;
       } catch (error) {
-        if (error instanceof NoRequiredEntity) {
+        if (
+          error instanceof NoRequiredEntity ||
+          error instanceof Fastify.errorCodes.FST_ERR_NOT_FOUND
+        ) {
           throw fastify.httpErrors.notFound();
         }
         throw fastify.httpErrors.badRequest();
@@ -135,30 +177,41 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<UserEntity> {
       try {
-        const { id } = request.params as GetId;
+        const { id } = request.params;
+        const { userId } = request.body;
 
         const yoursalf = await fastify.db.users.findOne({
           key: 'id',
           equals: id,
         });
-        if (!yoursalf) throw fastify.httpErrors.notFound(`User not Found!`);
+        if (!yoursalf) throw fastify.httpErrors.notFound();
 
-        const updatesalf = { ...yoursalf } as UserEntity;
+        const userToUnnsubscribe = await fastify.db.users.findOne({
+          key: 'id',
+          equals: userId,
+        });
 
-        const targetUser = JSON.stringify(request.body);
-        updatesalf.subscribedToUserIds.filter((user) => user !== targetUser);
+        if (!userToUnnsubscribe) throw fastify.httpErrors.notFound();
 
+        const updateUserToUnnsubscribe = {
+          subscribedToUserIds: userToUnnsubscribe.subscribedToUserIds.filter(
+            (subscribe) => subscribe !== yoursalf.id
+          ),
+        };
         const changed = await this.db.users.change(
           id,
-          updatesalf as ChangeUser
+          updateUserToUnnsubscribe
         );
 
         return changed;
       } catch (error) {
-        if (error instanceof NoRequiredEntity) {
+        if (
+          error instanceof NoRequiredEntity ||
+          error instanceof Fastify.errorCodes.FST_ERR_NOT_FOUND
+        ) {
           throw fastify.httpErrors.notFound();
         }
-        throw fastify.httpErrors.notFound();
+        throw fastify.httpErrors.badRequest();
       }
     }
   );
@@ -173,14 +226,17 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<UserEntity> {
       try {
-        const { id } = request.params as GetId;
+        const { id } = request.params;
 
-        return this.db.users.change(id, request.body as ChangeUser);
+        return this.db.users.change(id, request.body);
       } catch (error) {
-        if (error instanceof NoRequiredEntity) {
+        if (
+          error instanceof NoRequiredEntity ||
+          error instanceof Fastify.errorCodes.FST_ERR_NOT_FOUND
+        ) {
           throw fastify.httpErrors.notFound();
         }
-        throw fastify.httpErrors.notFound();
+        throw fastify.httpErrors.badRequest();
       }
     }
   );

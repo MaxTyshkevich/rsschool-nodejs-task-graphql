@@ -1,17 +1,9 @@
 import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-schema-to-ts';
 import { idParamSchema } from '../../utils/reusedSchemas';
 import { createPostBodySchema, changePostBodySchema } from './schema';
-import type {
-  CreatePostDTO,
-  PostEntity,
-} from '../../utils/DB/entities/DBPosts';
-import { GetId } from '../users';
+import type { PostEntity } from '../../utils/DB/entities/DBPosts';
+import Fastify from 'fastify';
 import { NoRequiredEntity } from '../../utils/DB/errors/NoRequireEntity.error';
-
-type ChangePost = {
-  title?: 'string';
-  content?: 'string';
-};
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
   fastify
@@ -29,7 +21,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<PostEntity> {
       try {
-        const { id } = request.params as GetId;
+        const { id } = request.params;
 
         const profile = await fastify.db.posts.findOne({
           key: 'id',
@@ -40,7 +32,10 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
 
         return profile;
       } catch (error) {
-        if (error instanceof NoRequiredEntity) {
+        if (
+          error instanceof NoRequiredEntity ||
+          error instanceof Fastify.errorCodes.FST_ERR_NOT_FOUND
+        ) {
           throw fastify.httpErrors.notFound();
         }
         throw fastify.httpErrors.badRequest();
@@ -56,7 +51,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<PostEntity> {
-      return fastify.db.posts.create(request.body as CreatePostDTO);
+      return fastify.db.posts.create(request.body);
     }
   );
 
@@ -69,15 +64,15 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<PostEntity> {
       try {
-        const { id } = request.params as GetId;
+        const { id } = request.params;
 
         const posts = await fastify.db.posts.delete(id);
         return posts;
       } catch (error) {
         if (error instanceof NoRequiredEntity) {
-          throw fastify.httpErrors.notFound();
+          throw fastify.httpErrors.badRequest();
         }
-        throw fastify.httpErrors.badRequest();
+        throw fastify.httpErrors.notFound();
       }
     }
   );
@@ -92,18 +87,15 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<PostEntity> {
       try {
-        const { id } = request.params as GetId;
+        const { id } = request.params;
 
-        const posts = await fastify.db.posts.change(
-          id,
-          request.body as ChangePost
-        );
+        const posts = await fastify.db.posts.change(id, request.body);
         return posts;
       } catch (error) {
         if (error instanceof NoRequiredEntity) {
-          throw fastify.httpErrors.notFound();
+          throw fastify.httpErrors.badRequest();
         }
-        throw fastify.httpErrors.badRequest();
+        throw fastify.httpErrors.notFound();
       }
     }
   );

@@ -1,12 +1,9 @@
 import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-schema-to-ts';
 import { idParamSchema } from '../../utils/reusedSchemas';
 import { createProfileBodySchema, changeProfileBodySchema } from './schema';
-import type {
-  ChangeProfileDTO,
-  CreateProfileDTO,
-  ProfileEntity,
-} from '../../utils/DB/entities/DBProfiles';
-import { GetId } from '../users';
+import type { ProfileEntity } from '../../utils/DB/entities/DBProfiles';
+/* import Fastify from 'fastify'; */
+
 import { NoRequiredEntity } from '../../utils/DB/errors/NoRequireEntity.error';
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
@@ -24,23 +21,16 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<ProfileEntity> {
-      try {
-        const { id } = request.params as GetId;
+      const { id } = request.params;
 
-        const profile = await fastify.db.profiles.findOne({
-          key: 'id',
-          equals: id,
-        });
+      const profile = await fastify.db.profiles.findOne({
+        key: 'id',
+        equals: id,
+      });
 
-        if (!profile) throw new NoRequiredEntity(``);
+      if (!profile) throw fastify.httpErrors.notFound();
 
-        return profile;
-      } catch (error) {
-        if (error instanceof NoRequiredEntity) {
-          throw fastify.httpErrors.notFound();
-        }
-        throw fastify.httpErrors.badRequest();
-      }
+      return profile;
     }
   );
 
@@ -52,20 +42,24 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<ProfileEntity> {
-      try {
-        const profile = await fastify.db.profiles.create(
-          request.body as CreateProfileDTO
-        );
+      const { userId, memberTypeId } = request.body;
 
-        if (!profile) throw new NoRequiredEntity(``);
+      const user = await this.db.users.findOne({ key: 'id', equals: userId });
+      if (!user) throw fastify.httpErrors.badRequest();
 
-        return profile;
-      } catch (error) {
-        if (error instanceof NoRequiredEntity) {
-          throw fastify.httpErrors.notFound();
-        }
-        throw fastify.httpErrors.badRequest();
-      }
+      const type = await this.db.memberTypes.findOne({
+        key: 'id',
+        equals: memberTypeId,
+      });
+      if (!type) throw fastify.httpErrors.badRequest();
+
+      const profile = await this.db.profiles.findOne({
+        key: 'userId',
+        equals: userId,
+      });
+      if (profile) throw fastify.httpErrors.badRequest();
+
+      return fastify.db.profiles.create(request.body);
     }
   );
 
@@ -77,17 +71,16 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<ProfileEntity> {
-      try {
-        const { id } = request.params as GetId;
+      const { id } = request.params;
 
-        const profile = await fastify.db.profiles.delete(id);
-        return profile;
-      } catch (error) {
-        if (error instanceof NoRequiredEntity) {
-          throw fastify.httpErrors.notFound();
-        }
-        throw fastify.httpErrors.badRequest();
-      }
+      const profile = await fastify.db.profiles.findOne({
+        key: 'id',
+        equals: id,
+      });
+
+      if (!profile) throw fastify.httpErrors.badRequest();
+
+      return fastify.db.profiles.delete(profile.id);
     }
   );
 
@@ -101,18 +94,21 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<ProfileEntity> {
       try {
-        const { id } = request.params as GetId;
+        const { id } = request.params;
 
-        const profile = await fastify.db.profiles.change(
-          id,
-          request.body as ChangeProfileDTO
-        );
-        return profile;
+        const profile = await fastify.db.profiles.findOne({
+          key: 'id',
+          equals: id,
+        });
+
+        if (!profile) throw fastify.httpErrors.notFound();
+
+        return fastify.db.profiles.change(id, request.body);
       } catch (error) {
         if (error instanceof NoRequiredEntity) {
-          throw fastify.httpErrors.notFound();
+          throw fastify.httpErrors.badRequest();
         }
-        throw fastify.httpErrors.badRequest();
+        throw error;
       }
     }
   );

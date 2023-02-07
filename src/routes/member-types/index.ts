@@ -2,7 +2,7 @@ import { FastifyPluginAsyncJsonSchemaToTs } from '@fastify/type-provider-json-sc
 import { idParamSchema } from '../../utils/reusedSchemas';
 import { changeMemberTypeBodySchema } from './schema';
 import type { MemberTypeEntity } from '../../utils/DB/entities/DBMemberTypes';
-import { GetId } from '../users';
+
 import { NoRequiredEntity } from '../../utils/DB/errors/NoRequireEntity.error';
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
@@ -22,7 +22,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<MemberTypeEntity> {
-      const { id } = request.params as GetId;
+      const { id } = request.params;
       const type = await this.db.memberTypes.findOne({ key: 'id', equals: id });
 
       if (!type) throw fastify.httpErrors.notFound(`User not Found!`);
@@ -41,17 +41,14 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<MemberTypeEntity> {
       try {
-        const { id } = request.params as GetId;
+        const { id } = request.params;
 
-        const changed = await fastify.db.memberTypes.change(
-          id,
-          request.body as { id: string; discount: number }
-        );
+        const changed = await fastify.db.memberTypes.change(id, request.body);
 
         return changed;
       } catch (error) {
         if (error instanceof NoRequiredEntity) {
-          throw fastify.httpErrors.notFound();
+          throw fastify.httpErrors.badRequest();
         }
         throw fastify.httpErrors.notFound();
       }
