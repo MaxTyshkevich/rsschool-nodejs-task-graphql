@@ -101,9 +101,14 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
           equals: id,
         });
 
-        if (!profile) throw fastify.httpErrors.notFound();
+        if (!profile) throw fastify.httpErrors.badRequest();
 
-        return fastify.db.profiles.change(id, request.body);
+        const profileChanged = await fastify.db.profiles.change(
+          id,
+          request.body
+        );
+
+        return profileChanged;
       } catch (error) {
         if (error instanceof NoRequiredEntity) {
           throw fastify.httpErrors.badRequest();
