@@ -9,21 +9,17 @@ import Fastify, { FastifyInstance } from 'fastify';
 import { NoRequiredEntity } from '../../utils/DB/errors/NoRequireEntity.error';
 import { ChangeMemberType, MemberType } from './member-types/type';
 import { ChangePost, CreatePost, PostType } from './posts/type';
-import {
-  ChangeProfile,
-  CreateProfileType,
-  ProfileType,
-} from './profilies/type';
+import { ChangeProfile, CreateProfile, ProfileType } from './profilies/type';
 import { ChangeUser, CreateUser, UserType } from './users/type';
 import { UserEntity } from '../../utils/DB/entities/DBUsers';
 
 const query = new GraphQLObjectType({
   name: 'Queries',
-  description: 'Root endpoint',
+  description: 'Root endpoint Queries',
   fields: () => ({
     GetAllMemberTypes: {
       type: new GraphQLList(MemberType),
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         return fastify.db.memberTypes.findMany();
       },
     },
@@ -44,14 +40,14 @@ const query = new GraphQLObjectType({
     },
     GetAllPosts: {
       type: new GraphQLList(PostType),
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         return fastify.db.posts.findMany();
       },
     },
     GetOneOfPost: {
       type: PostType,
       args: { id: { type: new GraphQLNonNull(GraphQLID) } },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         try {
           const { id } = args;
 
@@ -76,14 +72,14 @@ const query = new GraphQLObjectType({
     },
     GetAllProfiles: {
       type: new GraphQLList(ProfileType),
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         return fastify.db.profiles.findMany();
       },
     },
     GetOneOfProfile: {
       type: ProfileType,
       args: { id: { type: new GraphQLNonNull(GraphQLID) } },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         const { id } = args;
 
         const profile = await fastify.db.profiles.findOne({
@@ -98,14 +94,14 @@ const query = new GraphQLObjectType({
     },
     GetAllUsers: {
       type: new GraphQLList(UserType),
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         return fastify.db.users.findMany();
       },
     },
     GetOneOfUser: {
       type: UserType,
       args: { id: { type: new GraphQLNonNull(GraphQLID) } },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         const { id } = args;
         const user = await fastify.db.users.findOne({
           key: 'id',
@@ -119,8 +115,8 @@ const query = new GraphQLObjectType({
 });
 
 const mutation = new GraphQLObjectType({
-  name: 'Mutations',
-  description: 'Root endpoint',
+  name: 'Mutation',
+  description: 'Root endpoint Mutations',
   fields: () => ({
     /* Member */
     ChangeMemberType: {
@@ -133,7 +129,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(ChangeMemberType),
         },
       },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         try {
           const { id, input } = args;
 
@@ -156,7 +152,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(CreatePost),
         },
       },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         const { input } = args;
         return fastify.db.posts.create(input);
       },
@@ -172,7 +168,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(ChangePost),
         },
       },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         try {
           const { id, input } = args;
           const posts = await fastify.db.posts.change(id, input);
@@ -211,12 +207,12 @@ const mutation = new GraphQLObjectType({
     CreateProfile: {
       type: ProfileType,
       args: {
-        input: {
-          type: new GraphQLNonNull(CreateProfileType),
+        profile: {
+          type: new GraphQLNonNull(CreateProfile),
         },
       },
-      resolve: async (parent, args, fastify) => {
-        const { userId, memberTypeId } = args.input;
+      resolve: async (parent, args, fastify: FastifyInstance) => {
+        const { userId, memberTypeId } = args.profile;
 
         const user = await fastify.db.users.findOne({
           key: 'id',
@@ -246,7 +242,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLID),
         },
       },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         const { id } = args;
 
         const profile = await fastify.db.profiles.findOne({
@@ -269,7 +265,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(ChangeProfile),
         },
       },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         try {
           const { id, input } = args;
 
@@ -299,7 +295,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(CreateUser),
         },
       },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         try {
           const user = args.input;
 
@@ -325,7 +321,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(ChangeUser),
         },
       },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         try {
           const { id, input } = args;
 
@@ -353,7 +349,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLID),
         },
       },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         try {
           const { id } = args;
 
@@ -364,18 +360,17 @@ const mutation = new GraphQLObjectType({
 
           if (!yoursalf) throw fastify.httpErrors.badRequest();
 
-          const usersSubscribedList: UserEntity[] =
-            await fastify.db.users.findMany({
-              key: 'subscribedToUserIds',
-              inArray: id,
-            });
+          const usersSubscribedList = await fastify.db.users.findMany({
+            key: 'subscribedToUserIds',
+            inArray: id,
+          });
 
           for await (const item of usersSubscribedList) {
             const updateSubscrib = item.subscribedToUserIds.filter(
               (subIdUser) => subIdUser !== id
             );
 
-            const itemUpdate: UserEntity = {
+            const itemUpdate = {
               ...item,
               subscribedToUserIds: updateSubscrib,
             };
@@ -418,7 +413,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLID),
         },
       },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         try {
           const { id, userId } = args;
 
@@ -428,10 +423,11 @@ const mutation = new GraphQLObjectType({
           });
           if (!yoursalf) throw fastify.httpErrors.notFound();
 
-          const userSubscribeTo = await fastify.db.users.findOne({
-            key: 'id',
-            equals: userId,
-          });
+          const userSubscribeTo: UserEntity | null =
+            await fastify.db.users.findOne({
+              key: 'id',
+              equals: userId,
+            });
 
           if (!userSubscribeTo) throw fastify.httpErrors.notFound();
 
@@ -478,20 +474,19 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLID),
         },
       },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, fastify: FastifyInstance) => {
         const { id, userId } = args;
 
-        const yoursalf: UserEntity | null = await fastify.db.users.findOne({
+        const yoursalf = await fastify.db.users.findOne({
           key: 'id',
           equals: id,
         });
         if (!yoursalf) throw fastify.httpErrors.notFound();
 
-        const userToUnnsubscribe: UserEntity | null =
-          await fastify.db.users.findOne({
-            key: 'id',
-            equals: userId,
-          });
+        const userToUnnsubscribe = await fastify.db.users.findOne({
+          key: 'id',
+          equals: userId,
+        });
 
         if (!userToUnnsubscribe) throw fastify.httpErrors.notFound();
 

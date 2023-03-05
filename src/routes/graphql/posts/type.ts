@@ -18,8 +18,8 @@ export const PostType = new GraphQLObjectType({
 });
 
 export const CreatePost = new GraphQLInputObjectType({
-  name: 'CreateProfile',
-  description: 'Create Profile',
+  name: 'CreatePost',
+  description: 'Create Post',
   fields: {
     title: { type: new GraphQLNonNull(GraphQLString) },
     content: { type: new GraphQLNonNull(GraphQLString) },
@@ -28,8 +28,8 @@ export const CreatePost = new GraphQLInputObjectType({
 });
 
 export const ChangePost = new GraphQLInputObjectType({
-  name: 'CreateProfile',
-  description: 'Create Profile',
+  name: 'ChangePost',
+  description: 'Create Post',
   fields: {
     title: { type: new GraphQLNonNull(GraphQLString) },
     content: { type: new GraphQLNonNull(GraphQLString) },

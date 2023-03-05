@@ -16,8 +16,8 @@ export const MemberType = new GraphQLObjectType({
 });
 
 export const ChangeMemberType = new GraphQLInputObjectType({
-  name: 'CreateProfile',
-  description: 'Create Profile',
+  name: 'ChangeMemberType',
+  description: 'Change Member Type',
   fields: {
     discount: { type: GraphQLInt },
     monthPostsLimit: { type: GraphQLInt },

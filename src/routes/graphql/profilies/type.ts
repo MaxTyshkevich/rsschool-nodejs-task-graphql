@@ -23,9 +23,9 @@ export const ProfileType = new GraphQLObjectType({
   },
 });
 
-export const CreateProfileType = new GraphQLInputObjectType({
-  name: 'CreateProfileType',
-  description: 'Create Profile Type',
+export const CreateProfile = new GraphQLInputObjectType({
+  name: 'CreateProfile',
+  description: 'Create Profile',
   fields: () => ({
     avatar: { type: new GraphQLNonNull(GraphQLString) },
     sex: { type: new GraphQLNonNull(GraphQLString) },
