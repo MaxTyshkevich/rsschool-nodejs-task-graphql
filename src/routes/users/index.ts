@@ -94,11 +94,6 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
           await fastify.db.users.change(id, itemUpdate);
         }
 
-        /*  const profile = await fastify.db.profiles.findOne({
-          key: 'userId',
-          equals: id,
-        }); */
-
         const profile = await fastify.db.profiles.findOne({
           key: 'userId',
           equals: id,
