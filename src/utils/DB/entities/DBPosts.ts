@@ -15,6 +15,15 @@ export default class DBPosts extends DBEntity<
   ChangePostDTO,
   CreatePostDTO
 > {
+  entities = [
+    {
+      id: '3fd71b5b-139a-4c69-b21f-52e5ef41c6c1',
+      title: 'Post title1',
+      content: 'Post description1',
+      userId: 'b9458600-0b2d-4443-9f46-9e67f9b031dd',
+    },
+  ];
+
   async create(dto: CreatePostDTO) {
     const created: PostEntity = {
       ...dto,

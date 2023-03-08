@@ -1,3 +1,4 @@
+import { FastifyInstance } from 'fastify';
 import {
   GraphQLObjectType,
   GraphQLID,
@@ -5,6 +6,7 @@ import {
   GraphQLInputObjectType,
   GraphQLNonNull,
 } from 'graphql';
+import { UserType } from '../users/type';
 
 export const PostType = new GraphQLObjectType({
   name: 'PostType',
@@ -13,7 +15,13 @@ export const PostType = new GraphQLObjectType({
     id: { type: GraphQLID },
     title: { type: GraphQLString },
     content: { type: GraphQLString },
-    userId: { type: GraphQLString },
+    /* userId: { type: GraphQLString }, */
+    user: {
+      type: UserType,
+      resolve: async (parent, args, fastify: FastifyInstance) => {
+        return fastify.db.users.findOne({ key: 'id', equals: parent.userId });
+      },
+    },
   },
 });
 

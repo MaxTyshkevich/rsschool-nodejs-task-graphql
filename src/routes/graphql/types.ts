@@ -232,7 +232,7 @@ const mutation = new GraphQLObjectType({
         });
         if (profile) throw fastify.httpErrors.badRequest();
 
-        return fastify.db.profiles.create(args.input);
+        return fastify.db.profiles.create(args.profile);
       },
     },
     DeleteProfile: {
