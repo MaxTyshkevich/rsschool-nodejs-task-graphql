@@ -148,13 +148,13 @@ const mutation = new GraphQLObjectType({
     CreatePost: {
       type: PostType,
       args: {
-        input: {
+        post: {
           type: new GraphQLNonNull(CreatePost),
         },
       },
       resolve: async (parent, args, fastify: FastifyInstance) => {
-        const { input } = args;
-        return fastify.db.posts.create(input);
+        const { post } = args;
+        return fastify.db.posts.create(post);
       },
     },
 

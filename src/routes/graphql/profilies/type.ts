@@ -1,4 +1,3 @@
-import { FastifyInstance } from 'fastify';
 import {
   GraphQLObjectType,
   GraphQLID,
@@ -7,10 +6,6 @@ import {
   GraphQLInputObjectType,
   GraphQLNonNull,
 } from 'graphql';
-import { MemberType } from '../member-types/type';
-import { PostType } from '../posts/type';
-
-import { UserType } from '../users/type';
 
 export const ProfileType = new GraphQLObjectType({
   name: 'ProfileType',
@@ -23,35 +18,8 @@ export const ProfileType = new GraphQLObjectType({
     country: { type: GraphQLString },
     street: { type: GraphQLString },
     city: { type: GraphQLString },
-    /*  userId: { type: GraphQLID }, */
-    /*  memberTypeId: { type: GraphQLID }, */
-
-    memberType: {
-      type: MemberType,
-      resolve: async (parent, args, fastify: FastifyInstance) => {
-        return fastify.db.memberTypes.findOne({
-          key: 'id',
-          equals: parent.memberTypeId,
-        });
-      },
-    },
-
-    user: {
-      type: UserType,
-      resolve: async (parent, args, fastify: FastifyInstance) => {
-        return fastify.db.users.findOne({ key: 'id', equals: parent.userId });
-      },
-    },
-
-    post: {
-      type: PostType,
-      resolve: async (parent, args, fastify: FastifyInstance) => {
-        return fastify.db.posts.findOne({
-          key: 'userId',
-          equals: parent.userId,
-        });
-      },
-    },
+    userId: { type: GraphQLID },
+    memberTypeId: { type: GraphQLID },
   },
 });
 

@@ -23,14 +23,14 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       try {
         const { id } = request.params;
 
-        const profile = await fastify.db.posts.findOne({
+        const post = await fastify.db.posts.findOne({
           key: 'id',
           equals: id,
         });
 
-        if (!profile) throw new NoRequiredEntity(``);
+        if (!post) throw new NoRequiredEntity(``);
 
-        return profile;
+        return post;
       } catch (error) {
         if (
           error instanceof NoRequiredEntity ||
