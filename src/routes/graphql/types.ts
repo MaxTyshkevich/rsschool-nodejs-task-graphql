@@ -354,57 +354,54 @@ const mutation = new GraphQLObjectType({
         },
       },
       resolve: async (parent, args, { fastify }: ContextToGraph) => {
-        try {
-          const { id } = args;
+        const { id } = args;
 
-          const yoursalf = await fastify.db.users.findOne({
-            key: 'id',
-            equals: id,
-          });
+        const yoursalf = await fastify.db.users.findOne({
+          key: 'id',
+          equals: id,
+        });
 
-          if (!yoursalf) throw fastify.httpErrors.badRequest();
+        if (!yoursalf) throw fastify.httpErrors.badRequest();
 
-          const usersSubscribedList = await fastify.db.users.findMany({
-            key: 'subscribedToUserIds',
-            inArray: id,
-          });
+        /* когда я удаляю юзера, мне нужно найти юзеров которые подписаны на удаляющего что-бы убрать подписку */
+        const usersSubscribedList = await fastify.db.users.findMany({
+          key: 'subscribedToUserIds',
+          inArrayAnyOf: [id],
+        });
 
-          for await (const item of usersSubscribedList) {
-            const updateSubscrib = item.subscribedToUserIds.filter(
-              (subIdUser) => subIdUser !== id
-            );
+        /* проверить асинхронность */
+        for (const item of usersSubscribedList) {
+          const updateSubscrib = item.subscribedToUserIds.filter(
+            (subIdUser) => subIdUser !== id
+          );
 
-            const itemUpdate = {
-              ...item,
-              subscribedToUserIds: updateSubscrib,
-            };
+          const itemUpdate: Partial<Omit<UserEntity, 'id'>> = {
+            subscribedToUserIds: updateSubscrib,
+          };
 
-            await fastify.db.users.change(id, itemUpdate);
-          }
-
-          const profile = await fastify.db.profiles.findOne({
-            key: 'userId',
-            equals: id,
-          });
-          if (!profile) throw fastify.httpErrors.badRequest();
-
-          await fastify.db.profiles.delete(profile.id);
-
-          const postsUser = await fastify.db.posts.findMany({
-            key: 'userId',
-            equals: id,
-          });
-          for await (const post of postsUser) {
-            await fastify.db.posts.delete(post.id);
-          }
-
-          return fastify.db.users.delete(id);
-        } catch (error) {
-          if (error instanceof NoRequiredEntity) {
-            throw fastify.httpErrors.notFound();
-          }
-          throw error;
+          const upUser = await fastify.db.users.change(item.id, itemUpdate);
+          console.log(upUser);
         }
+
+        const profile = await fastify.db.profiles.findOne({
+          key: 'userId',
+          equals: id,
+        });
+
+        if (profile) {
+          await fastify.db.profiles.delete(profile.id);
+        }
+
+        const postsUser = await fastify.db.posts.findMany({
+          key: 'userId',
+          equals: id,
+        });
+
+        for (const post of postsUser) {
+          await fastify.db.posts.delete(post.id);
+        }
+
+        return fastify.db.users.delete(id);
       },
     },
     SubscribeTo: {
@@ -418,54 +415,45 @@ const mutation = new GraphQLObjectType({
         },
       },
       resolve: async (parent, args, { fastify }: ContextToGraph) => {
-        try {
-          const { id, userId } = args;
+        const { id, userId } = args;
 
-          const yoursalf = await fastify.db.users.findOne({
-            key: 'id',
-            equals: id,
-          });
-          if (!yoursalf) throw fastify.httpErrors.notFound();
+        const userToSubscribe = await fastify.db.users.findOne({
+          key: 'id',
+          equals: id,
+        });
 
-          const userSubscribeTo: UserEntity | null =
-            await fastify.db.users.findOne({
-              key: 'id',
-              equals: userId,
-            });
+        if (!userToSubscribe) throw fastify.httpErrors.notFound();
 
-          if (!userSubscribeTo) throw fastify.httpErrors.notFound();
+        /* I want to Subscribed */
+        const user = await fastify.db.users.findOne({
+          key: 'id',
+          equals: userId,
+        });
 
-          const isSubscribed = userSubscribeTo.subscribedToUserIds.includes(
-            yoursalf.id
-          );
+        if (!user) throw fastify.httpErrors.notFound();
 
-          if (isSubscribed) {
-            return userSubscribeTo;
-          }
+        /* Do I have  userToSubscribed ? */
+        const isSubscribed = user.subscribedToUserIds.includes(
+          userToSubscribe.id
+        );
 
-          const updateUserSubscribeTo = {
-            ...userSubscribeTo,
-            subscribedToUserIds: [
-              ...userSubscribeTo.subscribedToUserIds,
-              yoursalf.id,
-            ],
-          };
-
-          const changed = await fastify.db.users.change(
-            userSubscribeTo.id,
-            updateUserSubscribeTo
-          );
-
-          return changed;
-        } catch (error) {
-          if (
-            error instanceof NoRequiredEntity ||
-            error instanceof Fastify.errorCodes.FST_ERR_NOT_FOUND
-          ) {
-            throw fastify.httpErrors.notFound();
-          }
-          throw fastify.httpErrors.badRequest();
+        if (isSubscribed) {
+          return user;
         }
+
+        const updateUserSubscribeTo = {
+          subscribedToUserIds: [
+            ...user.subscribedToUserIds,
+            userToSubscribe.id,
+          ],
+        };
+
+        const changed = await fastify.db.users.change(
+          user.id,
+          updateUserSubscribeTo
+        );
+
+        return changed;
       },
     },
     UnsubscribeTo: {
@@ -481,34 +469,37 @@ const mutation = new GraphQLObjectType({
       resolve: async (parent, args, { fastify }: ContextToGraph) => {
         const { id, userId } = args;
 
-        const yoursalf = await fastify.db.users.findOne({
+        const userToUnsubscribe = await fastify.db.users.findOne({
           key: 'id',
           equals: id,
         });
-        if (!yoursalf) throw fastify.httpErrors.notFound();
 
-        const userToUnnsubscribe = await fastify.db.users.findOne({
+        if (!userToUnsubscribe) throw fastify.httpErrors.notFound();
+
+        const user = await fastify.db.users.findOne({
           key: 'id',
           equals: userId,
         });
 
-        if (!userToUnnsubscribe) throw fastify.httpErrors.notFound();
+        if (!user) throw fastify.httpErrors.notFound();
 
-        if (userToUnnsubscribe.subscribedToUserIds.includes(yoursalf.id)) {
-          const updateUserToUnnsubscribe = {
-            subscribedToUserIds: userToUnnsubscribe.subscribedToUserIds.filter(
-              (subscribe) => subscribe !== yoursalf.id
-            ),
-          };
-          const changed = await fastify.db.users.change(
-            userToUnnsubscribe.id,
-            updateUserToUnnsubscribe
-          );
-
-          return changed;
-        } else {
+        /* Do you have the  userToUnsubscribe ? */
+        if (!user.subscribedToUserIds.includes(userToUnsubscribe.id)) {
           throw fastify.httpErrors.badRequest();
         }
+
+        const updateUserSubscribed = {
+          subscribedToUserIds: user.subscribedToUserIds.filter(
+            (subscribe) => subscribe !== userToUnsubscribe.id
+          ),
+        };
+
+        const changed = await fastify.db.users.change(
+          user.id,
+          updateUserSubscribed
+        );
+
+        return changed;
       },
     },
   }),

@@ -122,12 +122,10 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       });
 
       for (const post of postsUser) {
-        const postDel = await fastify.db.posts.delete(post.id);
-        console.log(postDel);
+        await fastify.db.posts.delete(post.id);
       }
 
-      const delUser = await fastify.db.users.delete(id);
-      return delUser;
+      return fastify.db.users.delete(id);
     }
   );
 
