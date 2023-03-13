@@ -353,7 +353,11 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLID),
         },
       },
-      resolve: async (parent, args, { fastify }: ContextToGraph) => {
+      resolve: async (
+        parent,
+        args: { id: string },
+        { fastify }: ContextToGraph
+      ) => {
         const { id } = args;
 
         const yoursalf = await fastify.db.users.findOne({
