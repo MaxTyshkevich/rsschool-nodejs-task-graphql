@@ -41,7 +41,7 @@ export default class DBUsers extends DBEntity<
       firstName: 'Alina',
       lastName: 'Cabaeva',
       email: 'azaza@gmail.com',
-      subscribedToUserIds: [],
+      subscribedToUserIds: ['b9458600-0b2d-4443-9f46-9e67f9b031dd'],
     },
   ];
 

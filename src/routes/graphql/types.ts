@@ -13,20 +13,24 @@ import { ChangeProfile, CreateProfile, ProfileType } from './profilies/type';
 import { ChangeUser, CreateUser, UserType } from './users/type';
 import { UserEntity } from '../../utils/DB/entities/DBUsers';
 
+export type ContextToGraph = {
+  fastify: FastifyInstance;
+};
+
 const query = new GraphQLObjectType({
   name: 'Queries',
   description: 'Root endpoint Queries',
   fields: () => ({
     GetAllMemberTypes: {
       type: new GraphQLList(MemberType),
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         return fastify.db.memberTypes.findMany();
       },
     },
     GetOneOfMemberType: {
       type: MemberType,
       args: { id: { type: new GraphQLNonNull(GraphQLID) } },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         const { id } = args;
         const type = await fastify.db.memberTypes.findOne({
           key: 'id',
@@ -40,14 +44,14 @@ const query = new GraphQLObjectType({
     },
     GetAllPosts: {
       type: new GraphQLList(PostType),
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         return fastify.db.posts.findMany();
       },
     },
     GetOneOfPost: {
       type: PostType,
       args: { id: { type: new GraphQLNonNull(GraphQLID) } },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         try {
           const { id } = args;
 
@@ -72,14 +76,14 @@ const query = new GraphQLObjectType({
     },
     GetAllProfiles: {
       type: new GraphQLList(ProfileType),
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         return fastify.db.profiles.findMany();
       },
     },
     GetOneOfProfile: {
       type: ProfileType,
       args: { id: { type: new GraphQLNonNull(GraphQLID) } },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         const { id } = args;
 
         const profile = await fastify.db.profiles.findOne({
@@ -94,14 +98,14 @@ const query = new GraphQLObjectType({
     },
     GetAllUsers: {
       type: new GraphQLList(UserType),
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         return fastify.db.users.findMany();
       },
     },
     GetOneOfUser: {
       type: UserType,
       args: { id: { type: new GraphQLNonNull(GraphQLID) } },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         const { id } = args;
         const user = await fastify.db.users.findOne({
           key: 'id',
@@ -129,7 +133,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(ChangeMemberType),
         },
       },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         try {
           const { id, input } = args;
 
@@ -152,7 +156,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(CreatePost),
         },
       },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         const { post } = args;
         return fastify.db.posts.create(post);
       },
@@ -168,7 +172,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(ChangePost),
         },
       },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         try {
           const { id, input } = args;
           const posts = await fastify.db.posts.change(id, input);
@@ -189,7 +193,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLID),
         },
       },
-      resolve: async (parent, args, fastify) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         try {
           const { id } = args;
 
@@ -211,7 +215,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(CreateProfile),
         },
       },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         const { userId, memberTypeId } = args.profile;
 
         const user = await fastify.db.users.findOne({
@@ -242,7 +246,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLID),
         },
       },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         const { id } = args;
 
         const profile = await fastify.db.profiles.findOne({
@@ -265,7 +269,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(ChangeProfile),
         },
       },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         try {
           const { id, input } = args;
 
@@ -295,7 +299,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(CreateUser),
         },
       },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         try {
           const user = args.input;
 
@@ -321,7 +325,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(ChangeUser),
         },
       },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         try {
           const { id, input } = args;
 
@@ -349,7 +353,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLID),
         },
       },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         try {
           const { id } = args;
 
@@ -413,7 +417,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLID),
         },
       },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         try {
           const { id, userId } = args;
 
@@ -474,7 +478,7 @@ const mutation = new GraphQLObjectType({
           type: new GraphQLNonNull(GraphQLID),
         },
       },
-      resolve: async (parent, args, fastify: FastifyInstance) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph) => {
         const { id, userId } = args;
 
         const yoursalf = await fastify.db.users.findOne({

@@ -1,5 +1,5 @@
 import { MemberType } from './../member-types/type';
-import { FastifyInstance } from 'fastify';
+
 import {
   GraphQLObjectType,
   GraphQLID,
@@ -11,6 +11,7 @@ import {
 import { UserEntity } from '../../../utils/DB/entities/DBUsers';
 import { PostType } from '../posts/type';
 import { ProfileType } from '../profilies/type';
+import { ContextToGraph } from '../types';
 
 export const UserType = new GraphQLObjectType({
   name: 'UserType',
@@ -24,7 +25,11 @@ export const UserType = new GraphQLObjectType({
 
     memberType: {
       type: MemberType,
-      resolve: async (user: UserEntity, args: [], fastify: FastifyInstance) => {
+      resolve: async (
+        user: UserEntity,
+        args: [],
+        { fastify }: ContextToGraph
+      ) => {
         const profile = await fastify.db.profiles.findOne({
           key: 'userId',
           equals: user.id,
@@ -45,7 +50,11 @@ export const UserType = new GraphQLObjectType({
 
     posts: {
       type: new GraphQLList(PostType),
-      resolve: async (user: UserEntity, args: [], fastify: FastifyInstance) => {
+      resolve: async (
+        user: UserEntity,
+        args: [],
+        { fastify }: ContextToGraph
+      ) => {
         const posts = await fastify.db.posts.findMany({
           key: 'userId',
           equals: user.id,
@@ -59,7 +68,11 @@ export const UserType = new GraphQLObjectType({
 
     profile: {
       type: ProfileType,
-      resolve: async (user: UserEntity, args: [], fastify: FastifyInstance) => {
+      resolve: async (
+        user: UserEntity,
+        args: [],
+        { fastify }: ContextToGraph
+      ) => {
         const profile = await fastify.db.profiles.findOne({
           key: 'userId',
           equals: user.id,
@@ -74,15 +87,26 @@ export const UserType = new GraphQLObjectType({
      */
     userSubscribedTo: {
       type: new GraphQLList(ProfileType),
-      resolve: async (user: UserEntity, args: [], fastify: FastifyInstance) => {
-        const profile = await fastify.db.profiles.findMany({
-          key: 'id',
-          equals: user.id,
+      resolve: async (
+        user: UserEntity,
+        args: [],
+        { fastify }: ContextToGraph
+      ) => {
+        const usersSubscribedTo = await fastify.db.users.findMany({
+          key: 'subscribedToUserIds',
+          inArray: user.id,
         });
 
-        if (!profile) return null;
+        if (!usersSubscribedTo.length) return null;
 
-        return profile;
+        const profiles = usersSubscribedTo.map((user) =>
+          fastify.db.profiles.findMany({
+            key: 'id',
+            equals: user.id,
+          })
+        );
+
+        return Promise.all(profiles);
       },
     },
   },
