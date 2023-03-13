@@ -31,7 +31,7 @@ export const ChangePost = new GraphQLInputObjectType({
   name: 'ChangePost',
   description: 'Create Post',
   fields: {
-    title: { type: new GraphQLNonNull(GraphQLString) },
-    content: { type: new GraphQLNonNull(GraphQLString) },
+    title: { type: GraphQLString },
+    content: { type: GraphQLString },
   },
 });

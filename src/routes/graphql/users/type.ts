@@ -85,7 +85,7 @@ export const UserType = new GraphQLObjectType({
     },
     /* не уверен
      */
-    userSubscribedTo: {
+    subscribedToUser: {
       type: new GraphQLList(ProfileType),
       resolve: async (
         user: UserEntity,
@@ -99,15 +99,27 @@ export const UserType = new GraphQLObjectType({
 
         if (!usersSubscribedTo.length) return null;
 
-        const profiles = usersSubscribedTo.map((user) =>
-          fastify.db.profiles.findMany({
-            key: 'id',
-            equals: user.id,
+        const profiles = usersSubscribedTo.map((usersSubscribed) =>
+          fastify.db.profiles.findOne({
+            key: 'userId',
+            equals: usersSubscribed.id,
           })
         );
 
-        return Promise.all(profiles);
+        const res = await Promise.all(profiles).then((results) =>
+          results.filter((profile) => profile)
+        );
+        console.log(res);
+
+        return res;
       },
+
+      /*  const listId = usersSubscribedTo.map(({ id }) => id);
+        return fastify.db.profiles.findMany({
+          key: 'id',
+          inArrayAnyOf: listId,
+        });
+      }, */
     },
   },
 });
