@@ -12,6 +12,7 @@ import { UserEntity } from '../../../utils/DB/entities/DBUsers';
 import { PostType } from '../posts/type';
 import { ProfileType } from '../profilies/type';
 import { ContextToGraph } from '../types';
+import DataLoader from 'dataloader';
 
 export const UserType = new GraphQLObjectType({
   name: 'UserType',
@@ -71,55 +72,71 @@ export const UserType = new GraphQLObjectType({
       resolve: async (
         user: UserEntity,
         args: [],
-        { fastify }: ContextToGraph
+        { fastify, loaders }: ContextToGraph,
+        info
       ) => {
-        const profile = await fastify.db.profiles.findOne({
-          key: 'userId',
-          equals: user.id,
-        });
+        let dl = loaders.get(info.fieldNodes);
 
-        if (!profile) return null;
+        if (!dl) {
+          dl = new DataLoader(async (ids: any) => {
+            // обращаемся в базу чтоб получить авторов по ids
+            const profiles = await fastify.db.profiles.findMany({
+              key: 'userId',
+              equalsAnyOf: ids,
+            });
 
-        return profile;
+            // IMPORTANT: сортируем данные из базы в том порядке, как нам передали ids
+            const sortedInIdsOrder = ids.map(
+              (id: string) =>
+                profiles.find((profile) => profile.userId === id) ?? null
+            );
+            return sortedInIdsOrder;
+          });
+          // ложим инстанс дата-лоадера в WeakMap для повторного использования
+          loaders.set(info.fieldNodes, dl);
+        }
+
+        return dl.load(user.id);
       },
     },
-    /* не уверен
-     */
+
     subscribedToUser: {
       type: new GraphQLList(ProfileType),
       resolve: async (
         user: UserEntity,
         args: [],
-        { fastify }: ContextToGraph
+        { fastify, loaders }: ContextToGraph,
+        info
       ) => {
-        const usersSubscribedTo = await fastify.db.users.findMany({
-          key: 'subscribedToUserIds',
-          inArray: user.id,
-        });
+        let dl = loaders.get(info.fieldNodes);
 
-        if (!usersSubscribedTo.length) return null;
+        if (!dl) {
+          dl = new DataLoader(async (ids: readonly string[][]) => {
+            const listIds: string[] = [];
+            ids.forEach((arrayIds) => {
+              listIds.push(...arrayIds);
+            });
 
-        const profiles = usersSubscribedTo.map((usersSubscribed) =>
-          fastify.db.profiles.findOne({
-            key: 'userId',
-            equals: usersSubscribed.id,
-          })
-        );
+            const profiles = await fastify.db.profiles.findMany({
+              key: 'userId',
+              equalsAnyOf: listIds,
+            });
 
-        const res = await Promise.all(profiles).then((results) =>
-          results.filter((profile) => profile)
-        );
-        console.log(res);
+            // IMPORTANT: сортируем данные из базы в том порядке, как нам передали ids
+            const sortedInIdsOrder = ids.map((userslist: string[]) =>
+              userslist.map(
+                (id) =>
+                  profiles.find((profile) => profile.userId === id) ?? null
+              )
+            );
+            return sortedInIdsOrder;
+          });
+          // ложим инстанс дата-лоадера в WeakMap для повторного использования
+          loaders.set(info.fieldNodes, dl);
+        }
 
-        return res;
+        return dl.load(user.subscribedToUserIds);
       },
-
-      /*  const listId = usersSubscribedTo.map(({ id }) => id);
-        return fastify.db.profiles.findMany({
-          key: 'id',
-          inArrayAnyOf: listId,
-        });
-      }, */
     },
   },
 });

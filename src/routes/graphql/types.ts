@@ -15,6 +15,7 @@ import { UserEntity } from '../../utils/DB/entities/DBUsers';
 
 export type ContextToGraph = {
   fastify: FastifyInstance;
+  loaders: WeakMap<object, any>;
 };
 
 const query = new GraphQLObjectType({
@@ -83,7 +84,7 @@ const query = new GraphQLObjectType({
     GetOneOfProfile: {
       type: ProfileType,
       args: { id: { type: new GraphQLNonNull(GraphQLID) } },
-      resolve: async (parent, args, { fastify }: ContextToGraph) => {
+      resolve: async (parent, args, { fastify }: ContextToGraph, info) => {
         const { id } = args;
 
         const profile = await fastify.db.profiles.findOne({
@@ -383,8 +384,7 @@ const mutation = new GraphQLObjectType({
             subscribedToUserIds: updateSubscrib,
           };
 
-          const upUser = await fastify.db.users.change(item.id, itemUpdate);
-          console.log(upUser);
+          await fastify.db.users.change(item.id, itemUpdate);
         }
 
         const profile = await fastify.db.profiles.findOne({
